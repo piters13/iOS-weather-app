@@ -11,14 +11,15 @@ import Foundation
 
 class ViewController: UIViewController {
     
-    let url = URL(string: "https://www.metaweather.com/api/location/44418")
-    let session = URLSession(configuration: .default)
-    var dataTask : URLSessionDataTask?
+    // let url = URL(string: "https://www.metaweather.com/api/location/44418")
+    // let session = URLSession(configuration: .default)
+    // var dataTask : URLSessionDataTask?
     var weatherObject: [[String : AnyObject]]?
     var day: Int = 0
+    var _city: String?
     
     @IBOutlet weak var currentDate: UITextField!
-    @IBOutlet weak var city: UITextField!
+    @IBOutlet weak var cityName: UITextField!
     @IBOutlet weak var date: UITextField!
     @IBOutlet weak var weatherCondition: UITextField!
     @IBOutlet weak var minTemp: UITextField!
@@ -32,33 +33,15 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.getWeatherData()
-        // Do any additional setup after loading the view, typically from a nib.
-    }
-    
-    func getWeatherData() {
-        dataTask?.cancel()
-        
-        dataTask = session.dataTask(with: url!) { data, response, error in
-            if let error = error {
-                print ("Error: \(error)")
-            } else if let data = data, let response = response as? HTTPURLResponse,
-                response.statusCode == 200 {
-                
-                DispatchQueue.main.async {
-                    let jsonObject = try? JSONSerialization.jsonObject(with: data, options: [])
-                    
-                    self.setWeatherData(weatherObject: jsonObject as! [String : AnyObject])
-                }
-            }
+        if _city != nil {
+            self.updateView()
         }
-        
-        dataTask?.resume()
     }
     
-    func setWeatherData(weatherObject: [String : AnyObject]) {
-        self.weatherObject = weatherObject["consolidated_weather"] as? [[String : AnyObject]]
-        updateView()
+    func setWeatherData(weatherObject: [[String : AnyObject]], city: String) {
+        self.weatherObject = weatherObject
+        self._city = city
+        //updateView()
     }
     
     func convertDateFormatter() -> String {
@@ -70,11 +53,13 @@ class ViewController: UIViewController {
     }
     
     func updateView() {
+        //print(weatherObject)
         currentDate.text = convertDateFormatter()
-        city.text = "London"
+        cityName.text = self._city
         date.text = weatherObject?[day]["applicable_date"] as? String
         weatherCondition.text = weatherObject?[day]["weather_state_name"] as? String
         maxTemp.text = String(round(weatherObject?[day]["max_temp"] as! Double)) + " °C"
+        print(weatherObject?[day])
         minTemp.text = String(round(weatherObject?[day]["min_temp"] as! Double)) + " °C"
         wind.text = String(round(weatherObject?[day]["wind_speed"] as! Double)) + " mph " + (weatherObject?[day]["wind_direction_compass"] as! String)
         pressure.text = String(round(weatherObject?[day]["air_pressure"] as! Double)) + " mbar"
@@ -88,12 +73,10 @@ class ViewController: UIViewController {
         let url = URL(string: "https://www.metaweather.com/static/img/weather/png/64/\(weather_abbr).png")
         let data = try? Data(contentsOf: url!)
         icon.image = UIImage(data: data!)
-        
-        print(weatherObject)
     }
     
     func checkForFall(_ fall: String?) -> String?{
-        var possible_falls = ["Snow", "Sleet", "Hail", "Thunderstorm", "Heavy Rain", "Light Rain", "Showers"]
+        let possible_falls = ["Snow", "Sleet", "Hail", "Thunderstorm", "Heavy Rain", "Light Rain", "Showers"]
         if possible_falls.contains(fall!) {
             return fall;
         } else {
@@ -119,6 +102,11 @@ class ViewController: UIViewController {
         }
         prevButton.isEnabled = true
         self.updateView()
+    }
+    
+    
+    @IBAction func showMap(_ sender: Any) {
+        self.performSegue(withIdentifier: "MapSegue", sender: self)
     }
     
 }
